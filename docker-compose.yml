@@ -1,0 +1,50 @@
+services:
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: monitoring
+      POSTGRES_USER: monitoring
+      POSTGRES_PASSWORD: monitoring123
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+    ports:
+      - "5433:5432"
+
+  backend:
+
+    build:
+      context: ./backend
+
+    restart: unless-stopped
+
+    depends_on:
+      - postgres
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/monitoring
+      SPRING_DATASOURCE_USERNAME: monitoring
+      SPRING_DATASOURCE_PASSWORD: monitoring123
+
+    ports:
+      - "8081:8081"
+
+  frontend:
+
+    build:
+      context: ./frontend
+
+    restart: unless-stopped
+
+    depends_on:
+      - backend
+
+    ports:
+      - "4200:80"
+
+volumes:
+  postgres-data:

@@ -1,0 +1,91 @@
+<div class="container mt-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <h2>Deployment Dashboard</h2>
+
+        <button class="btn btn-primary" (click)="loadApplications()">
+
+            Refresh
+
+        </button>
+
+    </div>
+
+    <div class="card p-3 mb-4">
+
+        <h4>Add Application</h4>
+
+        <input class="form-control mb-2" placeholder="Name" [(ngModel)]="newApplication.name">
+
+        <input class="form-control mb-2" placeholder="Description" [(ngModel)]="newApplication.description">
+
+        <input type="number" class="form-control mb-2" placeholder="Port" [(ngModel)]="newApplication.port">
+
+        <select class="form-select mb-3" [(ngModel)]="newApplication.status">
+
+            <option value="RUNNING">RUNNING</option>
+            <option value="STOPPED">STOPPED</option>
+
+        </select>
+
+        <button class="btn btn-success" (click)="addApplication()">
+
+            Add Application
+
+        </button>
+
+    </div>
+
+    <table class="table table-striped table-hover">
+
+        <thead class="table-dark">
+
+            <tr>
+
+                <th>Name</th>
+                <th>Description</th>
+                <th>Port</th>
+                <th>Status</th>
+                <th>Actions</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            <tr *ngFor="let app of applications">
+
+                <td>{{ app.name }}</td>
+
+                <td>{{ app.description }}</td>
+
+                <td>{{ app.port }}</td>
+
+                <td>
+
+                    <span class="badge" [class.bg-success]="app.status==='RUNNING'"
+                        [class.bg-danger]="app.status==='STOPPED'">
+
+                        {{ app.status }}
+
+                    </span>
+
+                </td>
+
+                <td>
+                    <button class="btn btn-danger btn-sm" (click)="deleteApplication(app.id!)">
+
+                        Delete
+
+                    </button>
+                </td>
+
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
