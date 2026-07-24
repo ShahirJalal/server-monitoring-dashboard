@@ -2,6 +2,8 @@
 
 A full-stack CRUD dashboard for tracking the status of applications/services deployed on a server, built with Angular, Spring Boot, and PostgreSQL, containerized with Docker, and deployed via a Jenkins pipeline.
 
+**Live:** [dashboard.shahirjalal.com](https://dashboard.shahirjalal.com)
+
 ## Features
 
 - List all tracked applications
@@ -35,13 +37,21 @@ A full-stack CRUD dashboard for tracking the status of applications/services dep
 - Docker / Docker Compose
 - Nginx
 - Jenkins
+- Cloudflare Tunnel (public ingress, no port forwarding)
+- Self-hosted on an Ubuntu home server
 
 ---
 
 ## Architecture
 
 ```
-Browser
+Internet
+    │
+    ▼
+Cloudflare Tunnel  (dashboard.shahirjalal.com)
+    │
+    ▼
+Ubuntu home server
     │
     ▼
 Angular (served by Nginx, port 4200 → container port 80)
@@ -156,6 +166,8 @@ The [Jenkinsfile](Jenkinsfile) runs on a `home-server` agent and, on each build:
 2. Builds the backend jar (`mvnw clean package -DskipTests`)
 3. Installs and builds the frontend (`npm install && npm run build`)
 4. Redeploys via `docker compose down && docker compose up --build -d`
+
+The `home-server` agent is an Ubuntu box running the Docker Compose stack directly; a Cloudflare Tunnel exposes it publicly at [dashboard.shahirjalal.com](https://dashboard.shahirjalal.com) without opening any inbound ports.
 
 ---
 
