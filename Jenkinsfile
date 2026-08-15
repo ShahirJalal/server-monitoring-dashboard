@@ -37,11 +37,12 @@ pipeline {
         }
 
         stage('Test Frontend') {
-            // Requires a Chrome/Chromium install on the Jenkins agent for
-            // ChromeHeadless -- set CHROME_BIN if it's not on PATH.
+            // Uses the Chromium that `puppeteer` bundles (installed by `npm install`
+            // above) instead of relying on a system Chrome/Chromium on the agent --
+            // avoids fighting Ubuntu's snap-packaged chromium in headless CI.
             steps {
                 dir('frontend') {
-                    sh 'npx ng test --no-watch --no-progress --browsers=ChromeHeadless'
+                    sh 'CHROME_BIN=$(node -e "console.log(require(\'puppeteer\').executablePath())") npx ng test --no-watch --no-progress --browsers=ChromeHeadless'
                 }
             }
         }
