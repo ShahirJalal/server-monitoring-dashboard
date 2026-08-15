@@ -1,1 +1,29 @@
-<app-application-list></app-application-list>
+<nav class="navbar navbar-dark bg-dark">
+
+    <div class="container-fluid">
+
+        <span class="navbar-brand mb-0 h1">Server Monitoring Dashboard</span>
+
+        <div class="d-flex align-items-center gap-3">
+
+            <span class="text-light small" *ngIf="authService.currentUser as user">
+                Signed in as {{ user.username }}
+            </span>
+
+            <button *ngIf="authService.isLoggedIn" class="btn btn-outline-light btn-sm" (click)="logout()">
+                Log out
+            </button>
+
+            <a *ngIf="!authService.isLoggedIn" routerLink="/login" class="btn btn-outline-light btn-sm">
+                Log in
+            </a>
+
+        </div>
+
+    </div>
+
+</nav>
+
+<router-outlet></router-outlet>
+
+<app-toast-container></app-toast-container>

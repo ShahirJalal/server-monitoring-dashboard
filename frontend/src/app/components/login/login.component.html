@@ -1,0 +1,31 @@
+<div class="container mt-5" style="max-width: 380px">
+
+    <div class="card p-4">
+
+        <h4 class="mb-3">Log in</h4>
+
+        <form (ngSubmit)="submit()">
+
+            <div class="mb-2">
+                <label class="form-label">Username</label>
+                <input class="form-control" name="username" [(ngModel)]="username" required autofocus>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" name="password" [(ngModel)]="password" required>
+            </div>
+
+            <div class="alert alert-danger py-2" *ngIf="errorMessage">
+                {{ errorMessage }}
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" [disabled]="submitting">
+                {{ submitting ? 'Signing in...' : 'Sign in' }}
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
