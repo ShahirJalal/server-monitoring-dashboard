@@ -6,15 +6,20 @@ A full-stack CRUD dashboard for tracking the status of applications/services dep
 
 ## Features
 
-- List all tracked applications
-- Add an application (name, description, port, status)
-- Delete an application
-- REST API with full CRUD (including update by ID, not yet wired into the UI)
-- Status badges (`RUNNING` / `STOPPED`)
+- List all tracked applications (public, no login required)
+- Add, edit, and delete an application (requires login)
+- Automated health checks: a scheduled job probes each app's port every 30s and
+  keeps its status in sync, instead of trusting a manually-set field
+- Status summary: live counts + a proportion bar across `RUNNING` / `STOPPED` / `UNKNOWN`
+- Search and sort the application list
+- Session-based login for a single admin account, backing all writes
+- REST API with full CRUD, validated request bodies, and JSON error responses
+- Status badges (`RUNNING` / `STOPPED` / `UNKNOWN`)
+- Toast notifications for add/edit/delete/login feedback
 - Dockerized frontend (Nginx) and backend (Spring Boot)
 - Docker Compose orchestration with PostgreSQL
 - Nginx reverse proxy for `/api`
-- Jenkins CI/CD pipeline for build + deploy
+- Jenkins CI/CD pipeline for build, test, and deploy
 
 ---
 
@@ -27,7 +32,7 @@ A full-stack CRUD dashboard for tracking the status of applications/services dep
 
 ### Backend
 - Java 17
-- Spring Boot 3.5 (Web, Data JPA, Validation, Actuator)
+- Spring Boot 3.5 (Web, Data JPA, Validation, Security, Actuator)
 - Lombok
 
 ### Database
@@ -82,15 +87,16 @@ server-monitoring-dashboard
 
 ## API Reference
 
-Base path: `/api/applications`
+Base path: `/api/applications`. `GET` is public; `POST`/`PUT`/`DELETE` require login
+(see [Authentication](#authentication)).
 
-| Method | Path                    | Description              |
-|--------|--------------------------|---------------------------|
-| GET    | `/api/applications`      | List all applications     |
-| POST   | `/api/applications`      | Create an application     |
-| GET    | `/api/applications/{id}` | Get an application by ID  |
-| PUT    | `/api/applications/{id}` | Update an application     |
-| DELETE | `/api/applications/{id}` | Delete an application     |
+| Method | Path                    | Description                              |
+|--------|--------------------------|-------------------------------------------|
+| GET    | `/api/applications`      | List all applications                     |
+| POST   | `/api/applications`      | Create an application                     |
+| GET    | `/api/applications/{id}` | Get an application by ID                  |
+| PUT    | `/api/applications/{id}` | Update an application                     |
+| DELETE | `/api/applications/{id}` | Delete an application                     |
 
 Application payload:
 
@@ -98,10 +104,40 @@ Application payload:
 {
   "name": "string (required)",
   "description": "string",
-  "port": "number (required)",
-  "status": "RUNNING | STOPPED"
+  "port": "number (required, 1-65535)",
+  "status": "RUNNING | STOPPED | UNKNOWN (optional -- the health check owns this after creation)"
 }
 ```
+
+Errors are returned as JSON (`{ "status", "error", "message", "fieldErrors" }`) with
+the matching HTTP status: `400` for validation failures, `401`/`403` for auth, `404`
+for a missing application.
+
+Auth endpoints, base path `/api/auth`:
+
+| Method | Path            | Description                          |
+|--------|------------------|---------------------------------------|
+| POST   | `/api/auth/login`  | Log in, starts a session               |
+| POST   | `/api/auth/logout` | Log out, ends the session              |
+| GET    | `/api/auth/me`      | Current logged-in user, or 401         |
+
+---
+
+## Authentication
+
+A single admin account guards create/update/delete; the list itself stays public
+so the dashboard can be shared as a read-only status page.
+
+- Configured via `ADMIN_USERNAME` / `ADMIN_PASSWORD` env vars (local default:
+  `admin` / `admin123` -- **override these before deploying anywhere public**,
+  see [.env.example](.env.example)).
+- Session-cookie based (not JWT): `/api/auth/login` starts a server session,
+  `/api/auth/logout` ends it.
+- CSRF protection via Spring Security's cookie pattern (`XSRF-TOKEN` cookie +
+  `X-XSRF-TOKEN` header), which Angular's `HttpClient` handles automatically.
+- Works without CORS complexity because both dev (`ng serve`'s proxy) and prod
+  (Nginx) put the frontend and `/api` on the same origin -- see
+  [DEPLOYMENT.md](DEPLOYMENT.md) section 7.
 
 ---
 
@@ -115,7 +151,11 @@ cd backend
 ./mvnw clean package -DskipTests
 cd ..
 
-# 2. Build and start everything
+# 2. (optional) copy .env.example to .env and set real admin credentials --
+#    otherwise it falls back to admin/admin123, fine for a local try-out
+cp .env.example .env
+
+# 3. Build and start everything
 docker compose up --build
 ```
 
@@ -124,6 +164,9 @@ docker compose up --build
 | Frontend | http://localhost:4200         |
 | Backend  | http://localhost:8081/api     |
 | Postgres | localhost:5433 (db `monitoring`) |
+
+Log in at `http://localhost:4200/login` with the admin credentials above to add,
+edit, or delete applications.
 
 ---
 
@@ -145,6 +188,10 @@ Runs on `http://localhost:8081`. Defaults (overridable via env vars) come from [
 | `SPRING_DATASOURCE_URL`        | `jdbc:postgresql://localhost:5433/monitoring`     |
 | `SPRING_DATASOURCE_USERNAME`   | `monitoring`                                     |
 | `SPRING_DATASOURCE_PASSWORD`   | `monitoring123`                                  |
+| `ADMIN_USERNAME`               | `admin`                                          |
+| `ADMIN_PASSWORD`               | `admin123`                                       |
+| `CORS_ALLOWED_ORIGINS`         | `http://localhost:4200`                          |
+| `HEALTH_CHECK_INTERVAL_MS`     | `30000`                                          |
 
 **Frontend**
 
@@ -164,8 +211,11 @@ The [Jenkinsfile](Jenkinsfile) runs on a `home-server` agent and, on each build:
 
 1. Checks out the repo
 2. Builds the backend jar (`mvnw clean package -DskipTests`)
-3. Installs and builds the frontend (`npm install && npm run build`)
-4. Redeploys via `docker compose down && docker compose up --build -d`
+3. Runs backend tests (`mvnw test`)
+4. Installs and builds the frontend (`npm install && npm run build`)
+5. Runs frontend tests (`ng test --no-watch --browsers=ChromeHeadless` -- needs
+   Chrome/Chromium on the agent)
+6. Redeploys via `docker compose down && docker compose up --build -d`
 
 The `home-server` agent is an Ubuntu box running the Docker Compose stack directly; a Cloudflare Tunnel exposes it publicly at [dashboard.shahirjalal.com](https://dashboard.shahirjalal.com) without opening any inbound ports.
 
@@ -173,9 +223,8 @@ The `home-server` agent is an Ubuntu box running the Docker Compose stack direct
 
 ## Future Improvements
 
-- Authentication
-- Wire the update (`PUT`) endpoint into the UI (edit existing applications)
-- Server health monitoring (CPU & RAM statistics)
+- Server health monitoring (CPU & RAM statistics), beyond the current port-open check
 - Docker container monitoring
-- Charts
-- User management
+- Multi-user accounts (currently a single shared admin login)
+- Uptime history view (the data -- `lastCheckedAt` / `lastStatusChangeAt` -- is
+  already tracked; there's no timeline UI for it yet)
