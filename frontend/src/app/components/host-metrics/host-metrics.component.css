@@ -1,0 +1,53 @@
+.host-metrics {
+  /* Validated status palette -- see the dataviz skill's palette.md. */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-critical: #d03b3b;
+  --track: #e1e0d9;
+}
+
+.meters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.meter-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+
+.meter-label {
+  font-weight: 600;
+}
+
+.meter-detail {
+  color: #52514e;
+}
+
+.meter-track {
+  height: 10px;
+  border-radius: 4px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.severity-good {
+  background: var(--status-good);
+}
+
+.severity-warning {
+  background: var(--status-warning);
+}
+
+.severity-critical {
+  background: var(--status-critical);
+}

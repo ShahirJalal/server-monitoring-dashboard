@@ -1,0 +1,48 @@
+<div class="card p-3 mb-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">Docker Containers</h5>
+        <button class="btn btn-outline-secondary btn-sm" (click)="load()" [disabled]="loading">
+            {{ loading ? 'Refreshing...' : 'Refresh' }}
+        </button>
+    </div>
+
+    <div class="alert alert-danger py-2" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+    <div class="text-muted small" *ngIf="!loading && !errorMessage && containers.length === 0">
+        No containers found -- either nothing is running, or the Docker socket isn't mounted into this container.
+    </div>
+
+    <div class="table-responsive" *ngIf="containers.length > 0">
+
+        <table class="table table-sm table-striped align-middle mb-0">
+
+            <thead class="table-dark">
+                <tr>
+                    <th>Name</th>
+                    <th>Image</th>
+                    <th>State</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr *ngFor="let container of containers">
+                    <td>{{ container.name }}</td>
+                    <td class="text-muted small">{{ container.image }}</td>
+                    <td>
+                        <span class="badge" [class.bg-success]="container.state === 'running'"
+                              [class.bg-danger]="container.state === 'exited'"
+                              [class.bg-secondary]="container.state !== 'running' && container.state !== 'exited'">
+                            {{ container.state }}
+                        </span>
+                    </td>
+                    <td class="text-muted small">{{ container.status }}</td>
+                </tr>
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
