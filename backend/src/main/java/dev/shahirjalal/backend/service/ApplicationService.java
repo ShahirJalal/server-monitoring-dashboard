@@ -1,5 +1,6 @@
 package dev.shahirjalal.backend.service;
 
+import dev.shahirjalal.backend.dto.ApplicationRequest;
 import dev.shahirjalal.backend.entity.ApplicationEntity;
 
 import java.util.List;
@@ -10,9 +11,9 @@ public interface ApplicationService {
 
     ApplicationEntity findById(Long id);
 
-    ApplicationEntity save(ApplicationEntity application);
+    ApplicationEntity save(ApplicationRequest request);
 
-    ApplicationEntity update(Long id, ApplicationEntity application);
+    ApplicationEntity update(Long id, ApplicationRequest request);
 
     void delete(Long id);
 }

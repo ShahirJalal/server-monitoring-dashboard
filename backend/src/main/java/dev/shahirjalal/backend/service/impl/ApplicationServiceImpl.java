@@ -1,6 +1,9 @@
 package dev.shahirjalal.backend.service.impl;
 
+import dev.shahirjalal.backend.dto.ApplicationRequest;
 import dev.shahirjalal.backend.entity.ApplicationEntity;
+import dev.shahirjalal.backend.enums.Status;
+import dev.shahirjalal.backend.exception.NotFoundException;
 import dev.shahirjalal.backend.repository.ApplicationRepository;
 import dev.shahirjalal.backend.service.ApplicationService;
 import lombok.RequiredArgsConstructor;
@@ -22,29 +25,45 @@ public class ApplicationServiceImpl implements ApplicationService {
     @Override
     public ApplicationEntity findById(Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Application not found"));
+                .orElseThrow(() -> new NotFoundException("Application not found: " + id));
     }
 
     @Override
-    public ApplicationEntity save(ApplicationEntity application) {
+    public ApplicationEntity save(ApplicationRequest request) {
+
+        ApplicationEntity application = ApplicationEntity.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .port(request.getPort())
+                .status(request.getStatus() != null ? request.getStatus() : Status.UNKNOWN)
+                .build();
+
         return repository.save(application);
     }
 
     @Override
-    public ApplicationEntity update(Long id, ApplicationEntity application) {
+    public ApplicationEntity update(Long id, ApplicationRequest request) {
 
         ApplicationEntity existing = findById(id);
 
-        existing.setName(application.getName());
-        existing.setDescription(application.getDescription());
-        existing.setPort(application.getPort());
-        existing.setStatus(application.getStatus());
+        existing.setName(request.getName());
+        existing.setDescription(request.getDescription());
+        existing.setPort(request.getPort());
+
+        if (request.getStatus() != null) {
+            existing.setStatus(request.getStatus());
+        }
 
         return repository.save(existing);
     }
 
     @Override
     public void delete(Long id) {
+
+        if (!repository.existsById(id)) {
+            throw new NotFoundException("Application not found: " + id);
+        }
+
         repository.deleteById(id);
     }
 }
