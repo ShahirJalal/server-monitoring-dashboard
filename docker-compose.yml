@@ -29,6 +29,12 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/monitoring
       SPRING_DATASOURCE_USERNAME: monitoring
       SPRING_DATASOURCE_PASSWORD: monitoring123
+      # Admin login for create/update/delete -- override via a git-ignored
+      # .env file in production. See .env.example.
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      # Only matters for direct (non-proxied) API access -- see DEPLOYMENT.md section 7.
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
 
     ports:
       - "8081:8081"
