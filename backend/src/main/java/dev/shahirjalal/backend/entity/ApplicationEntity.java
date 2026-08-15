@@ -4,6 +4,8 @@ import dev.shahirjalal.backend.enums.Status;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "applications")
 @Getter
@@ -27,5 +29,12 @@ public class ApplicationEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Status status;
+    @Builder.Default
+    private Status status = Status.UNKNOWN;
+
+    /** Last time the automated health check ran against this application. */
+    private Instant lastCheckedAt;
+
+    /** Last time the health check observed the status actually change. */
+    private Instant lastStatusChangeAt;
 }
