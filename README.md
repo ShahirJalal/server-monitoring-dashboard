@@ -11,6 +11,12 @@ A full-stack CRUD dashboard for tracking the status of applications/services dep
 - Automated health checks: a scheduled job probes each app's port every 30s and
   keeps its status in sync, instead of trusting a manually-set field
 - Status summary: live counts + a proportion bar across `RUNNING` / `STOPPED` / `UNKNOWN`
+- Uptime history per application (every status change is recorded, not just the
+  current state)
+- Push notifications (via ntfy.sh) when a tracked app's status changes
+- Host metrics: CPU / memory / disk / uptime for the server this is deployed on,
+  with a warning banner when disk usage gets high
+- A live list of every Docker container running on the host
 - Search and sort the application list
 - Session-based login for a single admin account, backing all writes
 - REST API with full CRUD, validated request bodies, and JSON error responses
@@ -121,6 +127,15 @@ Auth endpoints, base path `/api/auth`:
 | POST   | `/api/auth/logout` | Log out, ends the session              |
 | GET    | `/api/auth/me`      | Current logged-in user, or 401         |
 
+History and system endpoints (all require login except history, which follows the
+same public-read rule as the rest of `/api/applications`):
+
+| Method | Path                              | Description                          |
+|--------|------------------------------------|---------------------------------------|
+| GET    | `/api/applications/{id}/history`   | Last 20 status changes for an app     |
+| GET    | `/api/system/metrics`              | Host CPU / memory / disk / uptime     |
+| GET    | `/api/system/containers`           | Every Docker container on the host    |
+
 ---
 
 ## Authentication
@@ -138,6 +153,43 @@ so the dashboard can be shared as a read-only status page.
 - Works without CORS complexity because both dev (`ng serve`'s proxy) and prod
   (Nginx) put the frontend and `/api` on the same origin -- see
   [DEPLOYMENT.md](DEPLOYMENT.md) section 7.
+
+---
+
+## System Monitoring & Alerting
+
+Beyond tracking individual applications, the dashboard can see the host it's
+deployed on:
+
+- **Host metrics** (`/api/system/metrics`) are read straight from a bind-mounted
+  host `/proc` (CPU, memory, uptime) and host `/` (disk usage) -- no metrics
+  agent/library, just parsing the same files `top`/`df` read. If those mounts
+  aren't present (e.g. local dev), every field just comes back `null` instead of
+  erroring.
+- **Docker containers** (`/api/system/containers`) come from a hand-rolled client
+  that talks to `/var/run/docker.sock` directly over a Unix domain socket (no
+  Docker SDK dependency) -- lists every container on the host, not just this
+  app's own three.
+- **Alerts**: on every status change (except the very first check on a new app),
+  the backend pushes a notification to an [ntfy.sh](https://ntfy.sh) topic if
+  `NTFY_TOPIC` is set. Free, no signup -- pick a private topic name, subscribe to
+  it in the ntfy app, done.
+
+**These three all require real host access**, configured in `docker-compose.yml`:
+
+```yaml
+volumes:
+  - /proc:/host/proc:ro
+  - /:/host/root:ro
+  - /var/run/docker.sock:/var/run/docker.sock:ro
+```
+
+This is a real trust boundary, not a minor config detail: even read-only, a
+compromised backend container can read anything under the host filesystem and
+inspect any container on the box via the Docker API. If you'd rather not grant
+that, comment out those three lines and the corresponding environment variables
+-- host metrics and the container list just come back empty, everything else
+(application tracking, health checks, auth) works exactly the same.
 
 ---
 
@@ -192,6 +244,10 @@ Runs on `http://localhost:8081`. Defaults (overridable via env vars) come from [
 | `ADMIN_PASSWORD`               | `admin123`                                       |
 | `CORS_ALLOWED_ORIGINS`         | `http://localhost:4200`                          |
 | `HEALTH_CHECK_INTERVAL_MS`     | `30000`                                          |
+| `NTFY_TOPIC`                   | *(blank -- alerting disabled)*                   |
+| `HOST_PROC_PATH`               | `/host/proc`                                     |
+| `HOST_ROOT_PATH`               | `/host/root`                                     |
+| `DOCKER_SOCKET_PATH`           | `/var/run/docker.sock`                           |
 
 **Frontend**
 
@@ -223,8 +279,9 @@ The `home-server` agent is an Ubuntu box running the Docker Compose stack direct
 
 ## Future Improvements
 
-- Server health monitoring (CPU & RAM statistics), beyond the current port-open check
-- Docker container monitoring
 - Multi-user accounts (currently a single shared admin login)
-- Uptime history view (the data -- `lastCheckedAt` / `lastStatusChangeAt` -- is
-  already tracked; there's no timeline UI for it yet)
+- Per-container CPU/memory stats (the container list currently shows state/status
+  only, not resource usage)
+- A proper uptime graph (history is recorded and shown as a list; a visual
+  timeline would read faster than text)
+- Alert channels beyond ntfy (Discord/Telegram/email)

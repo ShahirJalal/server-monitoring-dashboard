@@ -216,6 +216,26 @@ Pattern to reuse:
 - Host port mappings (`"5433:5432"`, `"8081:8081"`, `"4200:80"`) are only needed for direct/local access or debugging; the Cloudflare Tunnel (or any reverse proxy in front) only needs to reach the frontend's host port.
 - Credentials here are plaintext defaults suitable for a single-host home-lab setup. For anything internet-facing beyond a hobby project, move these into an `.env` file consumed via `env_file:` and/or Docker/Swarm secrets — see §8.
 
+**Optional read-only host access**, added when this project grew host-metrics and
+Docker-container-list features:
+```yaml
+  backend:
+    ...
+    volumes:
+      - /proc:/host/proc:ro
+      - /:/host/root:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+```
+Pattern to reuse for any "monitor the host itself" feature: bind-mount the specific
+host paths a container needs to *read* (`/proc` for CPU/mem, `/` for disk usage,
+the Docker socket for container info), all `:ro`. This is the standard way
+containerized monitoring tools (cAdvisor, node_exporter, Portainer agent) get host
+visibility — but be honest with yourself about what it grants: read access to the
+whole host filesystem, and via the Docker socket, the ability to inspect (not just
+list) any container on the box. `:ro` limits what the *mount* allows, not what the
+*Docker API* allows once the socket is reachable. Worth being a deliberate,
+documented opt-in (and skippable) rather than a default every service gets.
+
 **Local run order** (documented in the README, worth keeping for any project where an image copies a pre-built artifact rather than building it in-container):
 ```bash
 cd backend && ./mvnw clean package -DskipTests && cd ..
