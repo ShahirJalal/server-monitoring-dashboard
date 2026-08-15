@@ -4,10 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import { Application } from '../../models/application';
+import { StatusEvent } from '../../models/status-event';
 import { ApplicationService } from '../../services/application.service';
 import { AuthService } from '../../services/auth.service';
 import { ToastService } from '../../services/toast.service';
 import { StatusSummaryComponent } from '../status-summary/status-summary.component';
+import { HostMetricsComponent } from '../host-metrics/host-metrics.component';
+import { DockerContainersComponent } from '../docker-containers/docker-containers.component';
 
 type SortColumn = 'name' | 'port' | 'status';
 
@@ -25,7 +28,9 @@ const EMPTY_APPLICATION: Application = {
     CommonModule,
     FormsModule,
     RouterLink,
-    StatusSummaryComponent
+    StatusSummaryComponent,
+    HostMetricsComponent,
+    DockerContainersComponent
   ],
   templateUrl: './application-list.component.html',
   styleUrl: './application-list.component.css'
@@ -45,6 +50,10 @@ export class ApplicationListComponent implements OnInit {
   searchTerm = '';
   sortColumn: SortColumn = 'name';
   sortDirection: 'asc' | 'desc' = 'asc';
+
+  expandedHistoryId: number | null = null;
+  historyEvents: StatusEvent[] = [];
+  historyLoading = false;
 
   constructor(
     private applicationService: ApplicationService,
@@ -158,6 +167,28 @@ export class ApplicationListComponent implements OnInit {
 
   private extractError(err: any, fallback: string): string {
     return err?.error?.message ?? fallback;
+  }
+
+  toggleHistory(app: Application): void {
+
+    if (this.expandedHistoryId === app.id) {
+      this.expandedHistoryId = null;
+      return;
+    }
+
+    this.expandedHistoryId = app.id ?? null;
+    this.historyEvents = [];
+    this.historyLoading = true;
+
+    this.applicationService.getHistory(app.id!).subscribe({
+      next: events => {
+        this.historyEvents = events;
+        this.historyLoading = false;
+      },
+      error: () => {
+        this.historyLoading = false;
+      }
+    });
   }
 
   relativeTime(iso: string | null | undefined): string {

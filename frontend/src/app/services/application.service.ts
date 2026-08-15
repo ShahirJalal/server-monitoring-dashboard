@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Application } from '../models/application';
+import { StatusEvent } from '../models/status-event';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -27,6 +28,10 @@ export class ApplicationService {
 
   deleteApplication(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  getHistory(id: number): Observable<StatusEvent[]> {
+    return this.http.get<StatusEvent[]>(`${this.apiUrl}/${id}/history`);
   }
 
 }

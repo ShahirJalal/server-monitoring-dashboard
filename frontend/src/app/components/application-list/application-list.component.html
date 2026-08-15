@@ -18,6 +18,11 @@
 
     <app-status-summary [applications]="applications"></app-status-summary>
 
+    <ng-container *ngIf="authService.isLoggedIn">
+        <app-host-metrics></app-host-metrics>
+        <app-docker-containers></app-docker-containers>
+    </ng-container>
+
     <div class="card p-3 mb-4" *ngIf="authService.isLoggedIn">
 
         <h4>Add Application</h4>
@@ -64,6 +69,7 @@
                         <span *ngIf="sortColumn === 'status'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
                     </th>
                     <th>Last Checked</th>
+                    <th></th>
                     <th *ngIf="authService.isLoggedIn">Actions</th>
 
                 </tr>
@@ -96,6 +102,12 @@
 
                         <td class="text-muted small">{{ relativeTime(app.lastCheckedAt) }}</td>
 
+                        <td>
+                            <button class="btn btn-outline-secondary btn-sm" (click)="toggleHistory(app)">
+                                {{ expandedHistoryId === app.id ? 'Hide' : 'History' }}
+                            </button>
+                        </td>
+
                         <td *ngIf="authService.isLoggedIn">
                             <button class="btn btn-outline-primary btn-sm me-1" (click)="startEdit(app)">
                                 Edit
@@ -114,6 +126,7 @@
                         <td><input type="number" class="form-control form-control-sm" [(ngModel)]="editForm.port"></td>
                         <td class="text-muted small">auto-detected</td>
                         <td class="text-muted small">{{ relativeTime(app.lastCheckedAt) }}</td>
+                        <td></td>
                         <td>
                             <button class="btn btn-success btn-sm me-1" (click)="saveEdit()">Save</button>
                             <button class="btn btn-secondary btn-sm" (click)="cancelEdit()">Cancel</button>
@@ -121,10 +134,29 @@
 
                     </tr>
 
+                    <tr *ngIf="expandedHistoryId === app.id">
+                        <td colspan="7" class="bg-body-tertiary">
+
+                            <div class="text-muted small" *ngIf="historyLoading">Loading history...</div>
+
+                            <div class="text-muted small" *ngIf="!historyLoading && historyEvents.length === 0">
+                                No status changes recorded yet.
+                            </div>
+
+                            <ul class="list-unstyled mb-0 small" *ngIf="!historyLoading && historyEvents.length > 0">
+                                <li *ngFor="let event of historyEvents">
+                                    <strong>{{ event.oldStatus }} &rarr; {{ event.newStatus }}</strong>
+                                    &middot; {{ relativeTime(event.occurredAt) }}
+                                </li>
+                            </ul>
+
+                        </td>
+                    </tr>
+
                 </ng-container>
 
                 <tr *ngIf="!loading && visibleApplications.length === 0">
-                    <td colspan="6" class="text-center text-muted py-4">
+                    <td colspan="7" class="text-center text-muted py-4">
                         No applications match your search.
                     </td>
                 </tr>
