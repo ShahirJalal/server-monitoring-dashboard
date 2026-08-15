@@ -1,3 +1,5 @@
+export type Status = 'RUNNING' | 'STOPPED' | 'UNKNOWN';
+
 export interface Application {
 
   id?: number;
@@ -8,6 +10,10 @@ export interface Application {
 
   port: number;
 
-  status: 'RUNNING' | 'STOPPED';
+  status: Status;
+
+  lastCheckedAt?: string | null;
+
+  lastStatusChangeAt?: string | null;
 
 }

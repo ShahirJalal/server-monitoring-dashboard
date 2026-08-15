@@ -4,15 +4,21 @@
 
         <h2>Deployment Dashboard</h2>
 
-        <button class="btn btn-primary" (click)="loadApplications()">
+        <button class="btn btn-primary" (click)="loadApplications()" [disabled]="loading">
 
-            Refresh
+            {{ loading ? 'Refreshing...' : 'Refresh' }}
 
         </button>
 
     </div>
 
-    <div class="card p-3 mb-4">
+    <div class="alert alert-danger" *ngIf="errorMessage">
+        {{ errorMessage }}
+    </div>
+
+    <app-status-summary [applications]="applications"></app-status-summary>
+
+    <div class="card p-3 mb-4" *ngIf="authService.isLoggedIn">
 
         <h4>Add Application</h4>
 
@@ -22,14 +28,7 @@
 
         <input type="number" class="form-control mb-2" placeholder="Port" [(ngModel)]="newApplication.port">
 
-        <select class="form-select mb-3" [(ngModel)]="newApplication.status">
-
-            <option value="RUNNING">RUNNING</option>
-            <option value="STOPPED">STOPPED</option>
-
-        </select>
-
-        <button class="btn btn-success" (click)="addApplication()">
+        <button class="btn btn-success" (click)="addApplication()" [disabled]="!newApplication.name || !newApplication.port">
 
             Add Application
 
@@ -37,55 +36,103 @@
 
     </div>
 
-    <table class="table table-striped table-hover">
+    <div class="alert alert-secondary" *ngIf="!authService.isLoggedIn">
+        <a routerLink="/login">Log in</a> to add, edit, or delete applications. Status is public and updates automatically.
+    </div>
 
-        <thead class="table-dark">
+    <input class="form-control mb-3" placeholder="Search by name or description..." [(ngModel)]="searchTerm">
 
-            <tr>
+    <div class="table-responsive">
 
-                <th>Name</th>
-                <th>Description</th>
-                <th>Port</th>
-                <th>Status</th>
-                <th>Actions</th>
+        <table class="table table-striped table-hover align-middle">
 
-            </tr>
+            <thead class="table-dark">
 
-        </thead>
+                <tr>
 
-        <tbody>
+                    <th role="button" (click)="sortBy('name')">
+                        Name
+                        <span *ngIf="sortColumn === 'name'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                    </th>
+                    <th>Description</th>
+                    <th role="button" (click)="sortBy('port')">
+                        Port
+                        <span *ngIf="sortColumn === 'port'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                    </th>
+                    <th role="button" (click)="sortBy('status')">
+                        Status
+                        <span *ngIf="sortColumn === 'status'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                    </th>
+                    <th>Last Checked</th>
+                    <th *ngIf="authService.isLoggedIn">Actions</th>
 
-            <tr *ngFor="let app of applications">
+                </tr>
 
-                <td>{{ app.name }}</td>
+            </thead>
 
-                <td>{{ app.description }}</td>
+            <tbody>
 
-                <td>{{ app.port }}</td>
+                <ng-container *ngFor="let app of visibleApplications">
 
-                <td>
+                    <tr *ngIf="editingId !== app.id">
 
-                    <span class="badge" [class.bg-success]="app.status==='RUNNING'"
-                        [class.bg-danger]="app.status==='STOPPED'">
+                        <td>{{ app.name }}</td>
 
-                        {{ app.status }}
+                        <td>{{ app.description }}</td>
 
-                    </span>
+                        <td>{{ app.port }}</td>
 
-                </td>
+                        <td>
 
-                <td>
-                    <button class="btn btn-danger btn-sm" (click)="deleteApplication(app.id!)">
+                            <span class="badge" [class.bg-success]="app.status==='RUNNING'"
+                                [class.bg-danger]="app.status==='STOPPED'"
+                                [class.bg-secondary]="app.status==='UNKNOWN'">
 
-                        Delete
+                                {{ app.status }}
 
-                    </button>
-                </td>
+                            </span>
 
-            </tr>
+                        </td>
 
-        </tbody>
+                        <td class="text-muted small">{{ relativeTime(app.lastCheckedAt) }}</td>
 
-    </table>
+                        <td *ngIf="authService.isLoggedIn">
+                            <button class="btn btn-outline-primary btn-sm me-1" (click)="startEdit(app)">
+                                Edit
+                            </button>
+                            <button class="btn btn-danger btn-sm" (click)="deleteApplication(app.id!)">
+                                Delete
+                            </button>
+                        </td>
+
+                    </tr>
+
+                    <tr *ngIf="editingId === app.id">
+
+                        <td><input class="form-control form-control-sm" [(ngModel)]="editForm.name"></td>
+                        <td><input class="form-control form-control-sm" [(ngModel)]="editForm.description"></td>
+                        <td><input type="number" class="form-control form-control-sm" [(ngModel)]="editForm.port"></td>
+                        <td class="text-muted small">auto-detected</td>
+                        <td class="text-muted small">{{ relativeTime(app.lastCheckedAt) }}</td>
+                        <td>
+                            <button class="btn btn-success btn-sm me-1" (click)="saveEdit()">Save</button>
+                            <button class="btn btn-secondary btn-sm" (click)="cancelEdit()">Cancel</button>
+                        </td>
+
+                    </tr>
+
+                </ng-container>
+
+                <tr *ngIf="!loading && visibleApplications.length === 0">
+                    <td colspan="6" class="text-center text-muted py-4">
+                        No applications match your search.
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
 
 </div>
