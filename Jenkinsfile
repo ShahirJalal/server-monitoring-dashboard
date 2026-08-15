@@ -40,9 +40,11 @@ pipeline {
             // Uses the Chromium that `puppeteer` bundles (installed by `npm install`
             // above) instead of relying on a system Chrome/Chromium on the agent --
             // avoids fighting Ubuntu's snap-packaged chromium in headless CI.
+            // ChromeHeadlessCI (karma.conf.js) adds --no-sandbox, required on
+            // Ubuntu 23.10+ where unprivileged user namespaces are locked down.
             steps {
                 dir('frontend') {
-                    sh 'CHROME_BIN=$(node -e "console.log(require(\'puppeteer\').executablePath())") npx ng test --no-watch --no-progress --browsers=ChromeHeadless'
+                    sh 'CHROME_BIN=$(node -e "console.log(require(\'puppeteer\').executablePath())") npx ng test --no-watch --no-progress --browsers=ChromeHeadlessCI'
                 }
             }
         }
