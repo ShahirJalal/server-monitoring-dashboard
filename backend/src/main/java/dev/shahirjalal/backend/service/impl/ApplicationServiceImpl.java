@@ -2,9 +2,11 @@ package dev.shahirjalal.backend.service.impl;
 
 import dev.shahirjalal.backend.dto.ApplicationRequest;
 import dev.shahirjalal.backend.entity.ApplicationEntity;
+import dev.shahirjalal.backend.entity.StatusEvent;
 import dev.shahirjalal.backend.enums.Status;
 import dev.shahirjalal.backend.exception.NotFoundException;
 import dev.shahirjalal.backend.repository.ApplicationRepository;
+import dev.shahirjalal.backend.repository.StatusEventRepository;
 import dev.shahirjalal.backend.service.ApplicationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.util.List;
 public class ApplicationServiceImpl implements ApplicationService {
 
     private final ApplicationRepository repository;
+    private final StatusEventRepository statusEventRepository;
 
     @Override
     public List<ApplicationEntity> findAll() {
@@ -65,5 +68,10 @@ public class ApplicationServiceImpl implements ApplicationService {
         }
 
         repository.deleteById(id);
+    }
+
+    @Override
+    public List<StatusEvent> getHistory(Long id) {
+        return statusEventRepository.findTop20ByApplicationIdOrderByOccurredAtDesc(id);
     }
 }

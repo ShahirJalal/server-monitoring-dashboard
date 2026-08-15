@@ -5,6 +5,7 @@ import dev.shahirjalal.backend.entity.ApplicationEntity;
 import dev.shahirjalal.backend.enums.Status;
 import dev.shahirjalal.backend.exception.NotFoundException;
 import dev.shahirjalal.backend.repository.ApplicationRepository;
+import dev.shahirjalal.backend.repository.StatusEventRepository;
 import dev.shahirjalal.backend.service.impl.ApplicationServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,11 +28,14 @@ class ApplicationServiceImplTest {
     @Mock
     private ApplicationRepository repository;
 
+    @Mock
+    private StatusEventRepository statusEventRepository;
+
     private ApplicationServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new ApplicationServiceImpl(repository);
+        service = new ApplicationServiceImpl(repository, statusEventRepository);
     }
 
     @Test

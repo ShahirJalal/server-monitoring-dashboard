@@ -2,6 +2,7 @@ package dev.shahirjalal.backend.controller;
 
 import dev.shahirjalal.backend.dto.ApplicationRequest;
 import dev.shahirjalal.backend.entity.ApplicationEntity;
+import dev.shahirjalal.backend.entity.StatusEvent;
 import dev.shahirjalal.backend.service.ApplicationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,11 @@ public class ApplicationController {
     @GetMapping("/{id}")
     public ApplicationEntity getApplication(@PathVariable Long id) {
         return applicationService.findById(id);
+    }
+
+    @GetMapping("/{id}/history")
+    public List<StatusEvent> getHistory(@PathVariable Long id) {
+        return applicationService.getHistory(id);
     }
 
     @PostMapping
