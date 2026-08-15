@@ -35,6 +35,22 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
       # Only matters for direct (non-proxied) API access -- see DEPLOYMENT.md section 7.
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
+      # Push a notification to this ntfy.sh topic on every status change. Blank = off.
+      NTFY_TOPIC: ${NTFY_TOPIC:-}
+      HOST_PROC_PATH: /host/proc
+      HOST_ROOT_PATH: /host/root
+      DOCKER_SOCKET_PATH: /var/run/docker.sock
+
+    # Host access for the system-metrics / container-list features. All read-only,
+    # but still a real trust boundary: a compromised backend container can read
+    # anything under the host filesystem and inspect (not just list) any container
+    # on the box via the Docker API. Comment these out if you'd rather keep this
+    # container scoped to just its own stack -- host metrics and the container
+    # list will just come back empty instead of failing.
+    volumes:
+      - /proc:/host/proc:ro
+      - /:/host/root:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
     ports:
       - "8081:8081"
