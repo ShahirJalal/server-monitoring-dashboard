@@ -1,0 +1,52 @@
+<div class="status-summary card p-3 mb-4" *ngIf="total() > 0">
+
+    <div class="stat-tiles">
+
+        <div class="stat-tile">
+            <div class="stat-label">Total</div>
+            <div class="stat-value">{{ total() }}</div>
+        </div>
+
+        <div class="stat-tile">
+            <div class="stat-label"><span class="dot dot-running"></span> Running</div>
+            <div class="stat-value">{{ running() }}</div>
+        </div>
+
+        <div class="stat-tile">
+            <div class="stat-label"><span class="dot dot-stopped"></span> Stopped</div>
+            <div class="stat-value">{{ stopped() }}</div>
+        </div>
+
+        <div class="stat-tile">
+            <div class="stat-label"><span class="dot dot-unknown"></span> Unknown</div>
+            <div class="stat-value">{{ unknown() }}</div>
+        </div>
+
+    </div>
+
+    <div class="proportion-bar" role="img" attr.aria-label="{{ running() }} of {{ total() }} applications running">
+
+        <div *ngFor="let slice of slices(); let first = first; let last = last"
+             class="proportion-segment"
+             [class.status-running]="slice.status === 'RUNNING'"
+             [class.status-stopped]="slice.status === 'STOPPED'"
+             [class.status-unknown]="slice.status === 'UNKNOWN'"
+             [class.rounded-start]="first"
+             [class.rounded-end]="last"
+             [style.width.%]="slice.percent">
+        </div>
+
+    </div>
+
+    <div class="legend">
+
+        <span class="legend-item" *ngFor="let slice of slices()">
+            <span class="dot" [class.dot-running]="slice.status === 'RUNNING'"
+                  [class.dot-stopped]="slice.status === 'STOPPED'"
+                  [class.dot-unknown]="slice.status === 'UNKNOWN'"></span>
+            {{ slice.label }} &middot; {{ slice.count }} ({{ slice.percent | number:'1.0-0' }}%)
+        </span>
+
+    </div>
+
+</div>
